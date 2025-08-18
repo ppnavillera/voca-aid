@@ -1,5 +1,5 @@
 {
-  "name": "vocaaid",
+  "name": "voca-aid",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "deploy": "npm run build && gh-pages -d dist"
   },
-  "homepage": "https://<username>.github.io/vocaaid",
+  "homepage": "https://ppnavillera.github.io/voca-aid",
   "dependencies": {
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
