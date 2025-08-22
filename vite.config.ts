@@ -7,11 +7,14 @@ export default defineConfig(({ mode }) => {
   // Determine base path based on deployment platform
   let basePath = "/";
   if (process.env.NODE_ENV === "production") {
-    // GitHub Pages needs /voca-aid/ base path
-    if (process.env.GITHUB_PAGES || process.env.CI) {
+    // Vercel: explicitly use root path
+    if (process.env.VERCEL || process.env.VERCEL_ENV) {
+      basePath = "/";
+    }
+    // GitHub Pages: use repository name as base path
+    else if (process.env.GITHUB_PAGES || process.env.CI) {
       basePath = "/voca-aid/";
     }
-    // Vercel and other platforms use root path
   }
 
   return {
