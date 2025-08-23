@@ -74,6 +74,10 @@ export async function deleteWordFromNotion(wordId: string): Promise<void> {
   console.log('Notion word deletion not yet implemented:', wordId);
 }
 
+export async function deleteWordInNotion(wordId: string): Promise<void> {
+  console.log('Notion word deletion not yet implemented:', wordId);
+}
+
 // 전체 데이터 동기화
 export async function syncDataToNotion(appData: AppData): Promise<void> {
   console.log('Notion sync not yet implemented:', appData);
