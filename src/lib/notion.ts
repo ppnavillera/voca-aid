@@ -76,7 +76,7 @@ export async function fetchWordsFromNotion(): Promise<Word[]> {
     });
 
     return response.results.map((page) => 
-      convertNotionToWord(page as NotionWord)
+      convertNotionToWord(page as unknown as NotionWord)
     );
   } catch (error) {
     console.error('Error fetching words from Notion:', error);
