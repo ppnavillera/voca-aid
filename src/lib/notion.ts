@@ -127,12 +127,16 @@ export async function deleteWordInNotion(notionPageId: string): Promise<void> {
 
 // 전체 데이터 동기화
 export async function syncDataToNotion(appData: AppData): Promise<void> {
+  // TODO: Notion 연결 구현 예정
+  console.log('Notion sync not yet implemented:', appData);
+  
+  /* 추후 Notion 연결 시 구현
   const promises: Promise<void>[] = [];
 
   // 새로운 단어들을 Notion에 생성
   for (const word of appData.words) {
     if (!word.notionPageId) {
-      promises.push(createWordInNotion(word));
+      promises.push(createWordInNotion(word).then(() => {}));
     }
   }
 
@@ -149,4 +153,5 @@ export async function syncDataToNotion(appData: AppData): Promise<void> {
     console.error('Error syncing data to Notion:', error);
     throw error;
   }
+  */
 }
