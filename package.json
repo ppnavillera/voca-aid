@@ -1,0 +1,35 @@
+{
+  "name": "voca-aid",
+  "version": "1.0.0",
+  "description": "English vocabulary learning application with Notion integration",
+  "private": true,
+  "keywords": ["vocabulary", "english", "learning", "notion", "nextjs", "react"],
+  "author": "Your Name",
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build --turbopack",
+    "start": "next start",
+    "lint": "eslint",
+    "type-check": "tsc --noEmit",
+    "export": "next build && next export",
+    "deploy": "npm run build",
+    "analyze": "cross-env ANALYZE=true npm run build"
+  },
+  "dependencies": {
+    "@notionhq/client": "^4.0.2",
+    "next": "15.5.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
