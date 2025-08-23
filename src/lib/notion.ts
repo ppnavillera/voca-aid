@@ -1,19 +1,12 @@
 import { Client } from '@notionhq/client';
 import { AppData, Word, NotionWord } from '@/types';
 
-if (!process.env.NOTION_TOKEN) {
-  throw new Error('NOTION_TOKEN is required');
-}
+// Notion 설정 (선택적) - 환경변수가 없어도 오류 없이 동작
+const NOTION_TOKEN = process.env.NOTION_TOKEN;
+const DATABASE_ID = process.env.NOTION_DATABASE_ID;
 
-if (!process.env.NOTION_DATABASE_ID) {
-  throw new Error('NOTION_DATABASE_ID is required');
-}
-
-export const notion = new Client({
-  auth: process.env.NOTION_TOKEN,
-});
-
-export const DATABASE_ID = process.env.NOTION_DATABASE_ID;
+export const notion = NOTION_TOKEN ? new Client({ auth: NOTION_TOKEN }) : null;
+export { DATABASE_ID };
 
 // Notion 데이터를 Word 형식으로 변환
 export function convertNotionToWord(notionPage: NotionWord): Word {
@@ -24,134 +17,64 @@ export function convertNotionToWord(notionPage: NotionWord): Word {
   const isStarred = notionPage.properties.IsStarred?.checkbox || false;
 
   return {
-    id: generateLocalId(), // 로컬 ID 생성
+    id: notionPage.id,
     english,
     korean,
     korean2,
     folderId,
     isStarred,
-    notionPageId: notionPage.id,
+    notionPageId: notionPage.id
   };
 }
 
-// Word를 Notion 형식으로 변환
-export function convertWordToNotion(word: Word) {
+// Word 데이터를 Notion 형식으로 변환
+export function convertWordToNotionProperties(word: Word) {
   return {
-    parent: { database_id: DATABASE_ID },
-    properties: {
-      English: {
-        title: [{ text: { content: word.english } }],
-      },
-      Korean: {
-        rich_text: [{ text: { content: word.korean } }],
-      },
-      ...(word.korean2 && {
-        Korean2: {
-          rich_text: [{ text: { content: word.korean2 } }],
-        },
-      }),
-      ...(word.folderId && {
-        FolderId: {
-          rich_text: [{ text: { content: word.folderId } }],
-        },
-      }),
-      IsStarred: {
-        checkbox: word.isStarred || false,
-      },
+    English: {
+      title: [{ text: { content: word.english } }]
     },
+    Korean: {
+      rich_text: [{ text: { content: word.korean } }]
+    },
+    ...(word.korean2 && {
+      Korean2: {
+        rich_text: [{ text: { content: word.korean2 } }]
+      }
+    }),
+    ...(word.folderId && {
+      FolderId: {
+        rich_text: [{ text: { content: word.folderId } }]
+      }
+    }),
+    IsStarred: { checkbox: word.isStarred || false }
   };
 }
 
-// 로컬 ID 생성 (충돌 방지)
+// 로컬 ID 생성 함수
 function generateLocalId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// Notion에서 모든 단어 가져오기
+// 다음 함수들은 추후 Notion 연결 시 사용 예정
 export async function fetchWordsFromNotion(): Promise<Word[]> {
-  try {
-    const response = await notion.databases.query({
-      database_id: DATABASE_ID,
-      page_size: 100,
-    });
-
-    return response.results.map((page) => 
-      convertNotionToWord(page as unknown as NotionWord)
-    );
-  } catch (error) {
-    console.error('Error fetching words from Notion:', error);
-    throw error;
-  }
+  console.log('Notion sync not yet implemented');
+  return [];
 }
 
-// Notion에 단어 생성
 export async function createWordInNotion(word: Word): Promise<string> {
-  try {
-    const response = await notion.pages.create(convertWordToNotion(word));
-    return response.id;
-  } catch (error) {
-    console.error('Error creating word in Notion:', error);
-    throw error;
-  }
+  console.log('Notion word creation not yet implemented:', word);
+  return generateLocalId();
 }
 
-// Notion에서 단어 업데이트
 export async function updateWordInNotion(word: Word): Promise<void> {
-  if (!word.notionPageId) {
-    throw new Error('Notion page ID is required for update');
-  }
-
-  try {
-    await notion.pages.update({
-      page_id: word.notionPageId,
-      properties: convertWordToNotion(word).properties,
-    });
-  } catch (error) {
-    console.error('Error updating word in Notion:', error);
-    throw error;
-  }
+  console.log('Notion word update not yet implemented:', word);
 }
 
-// Notion에서 단어 삭제 (아카이브)
-export async function deleteWordInNotion(notionPageId: string): Promise<void> {
-  try {
-    await notion.pages.update({
-      page_id: notionPageId,
-      archived: true,
-    });
-  } catch (error) {
-    console.error('Error deleting word in Notion:', error);
-    throw error;
-  }
+export async function deleteWordFromNotion(wordId: string): Promise<void> {
+  console.log('Notion word deletion not yet implemented:', wordId);
 }
 
 // 전체 데이터 동기화
 export async function syncDataToNotion(appData: AppData): Promise<void> {
-  // TODO: Notion 연결 구현 예정
   console.log('Notion sync not yet implemented:', appData);
-  
-  /* 추후 Notion 연결 시 구현
-  const promises: Promise<void>[] = [];
-
-  // 새로운 단어들을 Notion에 생성
-  for (const word of appData.words) {
-    if (!word.notionPageId) {
-      promises.push(createWordInNotion(word).then(() => {}));
-    }
-  }
-
-  // 기존 단어들 업데이트
-  for (const word of appData.words) {
-    if (word.notionPageId) {
-      promises.push(updateWordInNotion(word));
-    }
-  }
-
-  try {
-    await Promise.all(promises);
-  } catch (error) {
-    console.error('Error syncing data to Notion:', error);
-    throw error;
-  }
-  */
 }
