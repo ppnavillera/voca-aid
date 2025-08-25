@@ -70,18 +70,23 @@ const Quiz: React.FC<QuizProps> = ({ appData, onUpdateWord }) => {
     }
   }, [showAnswer, quizStarted, quizFinished, currentWord]);
 
-  const startQuiz = (folderId: string | 'all' | 'unassigned' | null) => {
+  const startQuiz = (folderId: string | 'all' | 'unassigned' | 'starred' | null) => {
     let wordsForQuiz: Word[];
     if (folderId === 'all' || folderId === null) {
       wordsForQuiz = appData.words;
     } else if (folderId === 'unassigned') {
       wordsForQuiz = appData.words.filter(w => w.folderId === null);
+    } else if (folderId === 'starred') {
+      wordsForQuiz = appData.words.filter(w => w.isStarred);
     } else {
       wordsForQuiz = appData.words.filter(w => w.folderId === folderId);
     }
 
     if (wordsForQuiz.length === 0) {
-      alert("이 폴더에는 퀴즈를 풀 단어가 없습니다.");
+      const message = folderId === 'starred' 
+        ? "별표를 표시한 단어가 없습니다."
+        : "이 폴더에는 퀴즈를 풀 단어가 없습니다.";
+      alert(message);
       return;
     }
 
@@ -188,6 +193,9 @@ const Quiz: React.FC<QuizProps> = ({ appData, onUpdateWord }) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button onClick={() => startQuiz('all')} className="flex items-center justify-center gap-2 p-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold cursor-pointer">
                     <FolderIcon /> 모든 단어 ({appData.words.length})
+                </button>
+                <button onClick={() => startQuiz('starred')} className="flex items-center justify-center gap-2 p-4 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors font-semibold cursor-pointer">
+                    <StarIcon filled={true} className="h-5 w-5" /> 별표 단어만 ({appData.words.filter(w => w.isStarred).length})
                 </button>
                 <button onClick={() => startQuiz('unassigned')} className="flex items-center justify-center gap-2 p-4 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors font-semibold cursor-pointer">
                     <FolderIcon /> 미분류 ({appData.words.filter(w => w.folderId === null).length})
