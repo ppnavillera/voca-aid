@@ -17,8 +17,14 @@ const Study: React.FC<StudyProps> = ({ appData, onUpdateWord }) => {
   const [isRevealed, setIsRevealed] = useState(false);
 
   const [lastStudiedFolder, setLastStudiedFolder] = useState<
-    string | "all" | "unassigned" | "starred" | null
+    string | "all" | "unassigned" | "starred" | "custom" | null
   >(null);
+  
+  // 커스텀 폴더 선택을 위한 상태
+  const [showCustomSelection, setShowCustomSelection] = useState(false);
+  const [selectedFolderIds, setSelectedFolderIds] = useState<Set<string>>(new Set());
+  const [includeUnassigned, setIncludeUnassigned] = useState(true);
+  const [includeStarredOnly, setIncludeStarredOnly] = useState(false);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -63,10 +69,25 @@ const Study: React.FC<StudyProps> = ({ appData, onUpdateWord }) => {
   }, [studyStarted, handleKeyDown]);
 
   const startStudy = (
-    folderId: string | "all" | "unassigned" | "starred" | null
+    folderId: string | "all" | "unassigned" | "starred" | "custom" | null
   ) => {
     let wordsForStudy: Word[];
-    if (folderId === "starred") {
+    
+    if (folderId === "custom") {
+      // 커스텀 선택: 선택된 폴더들의 단어들 조합
+      wordsForStudy = appData.words.filter((w) => {
+        // 미분류 단어 포함 여부
+        if (w.folderId === null && includeUnassigned) return true;
+        // 선택된 폴더에 속한 단어
+        if (w.folderId && selectedFolderIds.has(w.folderId)) return true;
+        return false;
+      });
+      
+      // 별표 단어만 필터링
+      if (includeStarredOnly) {
+        wordsForStudy = wordsForStudy.filter((w) => w.isStarred);
+      }
+    } else if (folderId === "starred") {
       wordsForStudy = appData.words.filter((w) => w.isStarred);
     } else if (folderId === "all" || folderId === null) {
       wordsForStudy = appData.words;
@@ -77,7 +98,7 @@ const Study: React.FC<StudyProps> = ({ appData, onUpdateWord }) => {
     }
 
     if (wordsForStudy.length === 0) {
-      alert("이 그룹에는 학습할 단어가 없습니다.");
+      alert("선택한 조건에 해당하는 학습할 단어가 없습니다.");
       return;
     }
 
@@ -86,6 +107,27 @@ const Study: React.FC<StudyProps> = ({ appData, onUpdateWord }) => {
     setCurrentIndex(0);
     setIsRevealed(false);
     setStudyStarted(true);
+    setShowCustomSelection(false);
+  };
+
+  const handleFolderToggle = (folderId: string) => {
+    setSelectedFolderIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(folderId)) {
+        newSet.delete(folderId);
+      } else {
+        newSet.add(folderId);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAllFolders = () => {
+    setSelectedFolderIds(new Set(appData.folders.map(f => f.id)));
+  };
+
+  const deselectAllFolders = () => {
+    setSelectedFolderIds(new Set());
   };
 
   const resetStudy = () => {
@@ -112,6 +154,106 @@ const Study: React.FC<StudyProps> = ({ appData, onUpdateWord }) => {
   );
 
   if (!studyStarted) {
+    if (showCustomSelection) {
+      const customWordsCount = appData.words.filter((w) => {
+        if (w.folderId === null && includeUnassigned) return true;
+        if (w.folderId && selectedFolderIds.has(w.folderId)) return true;
+        return false;
+      }).filter(w => includeStarredOnly ? w.isStarred : true).length;
+
+      return (
+        <div className="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-xl shadow-lg">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold">폴더 선택하기</h2>
+            <button
+              onClick={() => setShowCustomSelection(false)}
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
+            >
+              ← 뒤로
+            </button>
+          </div>
+
+          <div className="space-y-6">
+            {/* 옵션 설정 */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="starred-only"
+                  checked={includeStarredOnly}
+                  onChange={(e) => setIncludeStarredOnly(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 bg-slate-200 dark:bg-slate-600 cursor-pointer"
+                />
+                <label htmlFor="starred-only" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                  별표 단어만 학습하기
+                </label>
+              </div>
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="include-unassigned"
+                  checked={includeUnassigned}
+                  onChange={(e) => setIncludeUnassigned(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 bg-slate-200 dark:bg-slate-600 cursor-pointer"
+                />
+                <label htmlFor="include-unassigned" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                  미분류 단어 포함
+                </label>
+              </div>
+            </div>
+
+            {/* 폴더 선택 */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">포함할 폴더</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={selectAllFolders}
+                    className="text-sm px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800 cursor-pointer"
+                  >
+                    전체 선택
+                  </button>
+                  <button
+                    onClick={deselectAllFolders}
+                    className="text-sm px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded hover:bg-slate-200 dark:hover:bg-slate-600 cursor-pointer"
+                  >
+                    전체 해제
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+                {appData.folders.map((folder) => (
+                  <div key={folder.id} className="flex items-center gap-3 p-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700">
+                    <input
+                      type="checkbox"
+                      id={`folder-${folder.id}`}
+                      checked={selectedFolderIds.has(folder.id)}
+                      onChange={() => handleFolderToggle(folder.id)}
+                      className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 bg-slate-200 dark:bg-slate-600 cursor-pointer"
+                    />
+                    <label htmlFor={`folder-${folder.id}`} className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer flex-1">
+                      {folder.name} ({appData.words.filter(w => w.folderId === folder.id).length})
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 시작 버튼 */}
+            <div className="flex justify-center pt-4">
+              <button
+                onClick={() => startStudy("custom")}
+                disabled={customWordsCount === 0}
+                className="px-8 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              >
+                시작하기 ({customWordsCount}개 단어)
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-xl shadow-lg text-center">
         <h2 className="text-2xl font-bold mb-4">단어 외우기</h2>
@@ -130,6 +272,12 @@ const Study: React.FC<StudyProps> = ({ appData, onUpdateWord }) => {
             className="flex items-center justify-center gap-2 p-4 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors font-semibold cursor-pointer"
           >
             <StarIcon filled /> 별표 단어 ({starredWordsCount})
+          </button>
+          <button
+            onClick={() => setShowCustomSelection(true)}
+            className="flex items-center justify-center gap-2 p-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold cursor-pointer"
+          >
+            <FolderIcon /> 폴더 선택하기
           </button>
           <button
             onClick={() => startStudy("unassigned")}
