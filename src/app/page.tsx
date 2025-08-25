@@ -76,6 +76,22 @@ export default function Home() {
     setLocalData(prev => ({ ...prev, folders: [...prev.folders, newFolder] }));
   }, [setLocalData]);
 
+  const updateFolder = useCallback((folderId: string, name: string) => {
+    if (name.trim() === '') return;
+    
+    // 입력 정화
+    const sanitizedName = name.trim().substring(0, 100);
+    
+    setLocalData(prev => ({
+      ...prev,
+      folders: prev.folders.map(folder => 
+        folder.id === folderId 
+          ? { ...folder, name: sanitizedName }
+          : folder
+      )
+    }));
+  }, [setLocalData]);
+
   const deleteFolder = useCallback((folderId: string) => {
     if (!window.confirm('폴더를 삭제하면 폴더 안의 단어들은 "미분류" 상태가 됩니다. 정말 삭제하시겠습니까?')) {
       return;
@@ -150,6 +166,7 @@ export default function Home() {
               onUpdateWord={updateWord}
               onMoveWords={moveWords}
               onAddFolder={addFolder}
+              onUpdateFolder={updateFolder}
               onDeleteFolder={deleteFolder}
               onImportData={setLocalData}
             />

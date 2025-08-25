@@ -18,6 +18,7 @@ interface WordManagementProps {
   onUpdateWord: (word: Word) => void;
   onMoveWords: (wordIds: string[], destinationFolderId: string | null) => void;
   onAddFolder: (name: string) => void;
+  onUpdateFolder: (id: string, name: string) => void;
   onDeleteFolder: (id: string) => void;
   onImportData: (data: AppData) => void;
 }
@@ -92,14 +93,65 @@ const EditWordModal: React.FC<{
   );
 };
 
+const EditFolderModal: React.FC<{
+  folder: Folder;
+  onSave: (id: string, name: string) => void;
+  onClose: () => void;
+}> = ({ folder, onSave, onClose }) => {
+  const [editedName, setEditedName] = useState(folder.name);
 
-const WordManagement: React.FC<WordManagementProps> = ({ appData, onAddWord, onDeleteWord, onUpdateWord, onMoveWords, onAddFolder, onDeleteFolder, onImportData }) => {
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editedName.trim() === '') return;
+
+    onSave(folder.id, editedName.trim());
+    onClose();
+  };
+
+  return (
+    <div 
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fade-in"
+      style={{animationDuration: '0.15s'}}
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-md"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">폴더 이름 수정</h2>
+        <form onSubmit={handleSave} className="space-y-4">
+          <input 
+            type="text" 
+            value={editedName} 
+            onChange={(e) => setEditedName(e.target.value)} 
+            placeholder="폴더 이름" 
+            className="w-full px-4 py-3 bg-slate-100 dark:bg-slate-700 border-2 border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-white" 
+            required 
+            autoFocus
+          />
+          <div className="flex justify-end gap-3 pt-4">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-200 dark:bg-slate-600 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors cursor-pointer">
+              취소
+            </button>
+            <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer">
+              저장
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+
+const WordManagement: React.FC<WordManagementProps> = ({ appData, onAddWord, onDeleteWord, onUpdateWord, onMoveWords, onAddFolder, onUpdateFolder, onDeleteFolder, onImportData }) => {
   const [newEnglish, setNewEnglish] = useState('');
   const [newKorean, setNewKorean] = useState('');
   const [newKorean2, setNewKorean2] = useState('');
   const [newFolderName, setNewFolderName] = useState('');
   const [selectedFolderId, setSelectedFolderId] = useState<string | 'all' | 'unassigned'>('all');
   const [editingWord, setEditingWord] = useState<Word | null>(null);
+  const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
   const [selectedWordIds, setSelectedWordIds] = useState<Set<string>>(new Set());
   const [moveTargetFolderId, setMoveTargetFolderId] = useState<string>('');
   const [lastSelectedIndex, setLastSelectedIndex] = useState<number>(-1);
@@ -291,6 +343,9 @@ const WordManagement: React.FC<WordManagementProps> = ({ appData, onAddWord, onD
                       <FolderIcon />
                       <span className="truncate">{folder.name}</span>
                   </button>
+                  <button onClick={() => setEditingFolder(folder)} className="p-1 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-indigo-500 transition-opacity cursor-pointer" aria-label={`Edit ${folder.name}`}>
+                      <PencilIcon />
+                  </button>
                   <button onClick={() => onDeleteFolder(folder.id)} className="p-1 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-opacity cursor-pointer" aria-label={`Delete ${folder.name}`}>
                       <TrashIcon />
                   </button>
@@ -436,6 +491,13 @@ const WordManagement: React.FC<WordManagementProps> = ({ appData, onAddWord, onD
           folders={appData.folders}
           onSave={onUpdateWord}
           onClose={() => setEditingWord(null)}
+        />
+      )}
+      {editingFolder && (
+        <EditFolderModal
+          folder={editingFolder}
+          onSave={onUpdateFolder}
+          onClose={() => setEditingFolder(null)}
         />
       )}
     </>
