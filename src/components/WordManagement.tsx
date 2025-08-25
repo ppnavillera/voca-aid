@@ -102,6 +102,7 @@ const WordManagement: React.FC<WordManagementProps> = ({ appData, onAddWord, onD
   const [editingWord, setEditingWord] = useState<Word | null>(null);
   const [selectedWordIds, setSelectedWordIds] = useState<Set<string>>(new Set());
   const [moveTargetFolderId, setMoveTargetFolderId] = useState<string>('');
+  const [lastSelectedIndex, setLastSelectedIndex] = useState<number>(-1);
 
   const englishInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -133,7 +134,44 @@ const WordManagement: React.FC<WordManagementProps> = ({ appData, onAddWord, onD
     setNewFolderName('');
   };
 
-  const handleToggleWordSelection = (wordId: string) => {
+  const handleWordSelection = (wordId: string, index: number, event: React.MouseEvent) => {
+    const isShiftPressed = event.shiftKey;
+    const isCtrlPressed = event.ctrlKey || event.metaKey;
+    
+    if (isShiftPressed && lastSelectedIndex >= 0) {
+      // Shift+클릭: 범위 선택
+      event.preventDefault();
+      const startIndex = Math.min(lastSelectedIndex, index);
+      const endIndex = Math.max(lastSelectedIndex, index);
+      const rangeIds = filteredWords.slice(startIndex, endIndex + 1).map(w => w.id);
+      
+      setSelectedWordIds(prev => {
+        const newSet = new Set(prev);
+        rangeIds.forEach(id => newSet.add(id));
+        return newSet;
+      });
+    } else if (isCtrlPressed) {
+      // Ctrl+클릭: 개별 토글
+      event.preventDefault();
+      setSelectedWordIds(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(wordId)) {
+          newSet.delete(wordId);
+        } else {
+          newSet.add(wordId);
+        }
+        return newSet;
+      });
+      setLastSelectedIndex(index);
+    } else {
+      // 일반 클릭: 단일 선택
+      event.preventDefault();
+      setSelectedWordIds(new Set([wordId]));
+      setLastSelectedIndex(index);
+    }
+  };
+
+  const handleToggleWordSelection = (wordId: string, index: number) => {
     setSelectedWordIds(prev => {
         const newSet = new Set(prev);
         if (newSet.has(wordId)) {
@@ -143,6 +181,7 @@ const WordManagement: React.FC<WordManagementProps> = ({ appData, onAddWord, onD
         }
         return newSet;
     });
+    setLastSelectedIndex(index);
   };
 
   const handleToggleSelectAll = () => {
@@ -300,7 +339,14 @@ const WordManagement: React.FC<WordManagementProps> = ({ appData, onAddWord, onD
 
           <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg">
             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">단어 목록 ({filteredWords.length})</h2>
+                <div>
+                  <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">단어 목록 ({filteredWords.length})</h2>
+                  {filteredWords.length > 0 && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      팁: Shift+클릭으로 범위 선택, Ctrl(Cmd)+클릭으로 개별 선택
+                    </p>
+                  )}
+                </div>
                 {filteredWords.length > 0 && (
                     <div className="flex items-center gap-2">
                         <input
@@ -341,18 +387,28 @@ const WordManagement: React.FC<WordManagementProps> = ({ appData, onAddWord, onD
 
             <div className="max-h-96 overflow-y-auto pr-2 space-y-3">
               {filteredWords.length > 0 ? (
-                filteredWords.map((word) => (
-                  <div key={word.id} className="flex items-center justify-between bg-slate-100 dark:bg-slate-700/50 p-3 rounded-lg animate-fade-in">
-                    <div className="flex items-center gap-3">
+                filteredWords.map((word, index) => (
+                  <div key={word.id} className={`flex items-center justify-between p-3 rounded-lg animate-fade-in transition-colors select-none ${
+                    selectedWordIds.has(word.id) 
+                      ? 'bg-indigo-100 dark:bg-indigo-900/30 border border-indigo-300 dark:border-indigo-600' 
+                      : 'bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}>
+                    <div className="flex items-center gap-3 flex-1 cursor-pointer" onClick={(e) => handleWordSelection(word.id, index, e)}>
                        <input
                             type="checkbox"
                             className="h-5 w-5 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 bg-slate-200 dark:bg-slate-600 cursor-pointer"
                             checked={selectedWordIds.has(word.id)}
-                            onChange={() => handleToggleWordSelection(word.id)}
+                            onChange={() => handleToggleWordSelection(word.id, index)}
+                            onClick={(e) => e.stopPropagation()}
                             aria-label={`Select ${word.english}`}
                         />
-                        <div>
-                          <p className="font-semibold text-slate-900 dark:text-slate-100">{word.english}</p>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-semibold text-slate-900 dark:text-slate-100">{word.english}</p>
+                            <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-400">
+                              {word.folderId ? appData.folders.find(f => f.id === word.folderId)?.name || '미분류' : '미분류'}
+                            </span>
+                          </div>
                           <p className="text-sm text-slate-600 dark:text-slate-400">{word.korean}</p>
                           {word.korean2 && <p className="text-sm text-slate-500 dark:text-slate-400/80">{word.korean2}</p>}
                         </div>
